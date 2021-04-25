@@ -63,6 +63,18 @@ func main() {
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(200, gin.H{"message": "pong"})
 	})
+	r.GET("/all", func(c *gin.Context) {
+		ret := insertAllPosts()
+		var val string
+		if ret < 0 {
+			val = "error occurred"
+		} else if ret == 0 {
+			val = "no new posts"
+		} else {
+			val = fmt.Sprintf("%d posts inserted.", ret)
+		}
+		c.JSON(200, gin.H{"result": val})
+	})
 	r.GET("/update", func(c *gin.Context) {
 		ret := checkNewPosts()
 		var val string
@@ -100,6 +112,39 @@ func checkNewPosts() int {
 		return -1
 	}
 	return addPost(h)
+}
+
+func insertAllPosts() int {
+	cnt := 0
+	token := os.Getenv("API_TOKEN")
+	url := fmt.Sprintf("https://graph.instagram.com/me/media?fields=media_url,caption,timestamp&access_token=%s", token)
+	for {
+		res, err1 := http.Get(url)
+		if err1 != nil {
+			fmt.Fprintf(os.Stderr, "API失敗")
+			return cnt
+		}
+		defer res.Body.Close()
+		byteArray, err2 := ioutil.ReadAll(res.Body)
+		if err2 != nil {
+			fmt.Fprintf(os.Stderr, "レスポンス読み込み失敗")
+			return cnt
+		}
+
+		var h MyHistory
+		err3 := json.Unmarshal(byteArray, &h)
+		if err3 != nil {
+			fmt.Fprintf(os.Stderr, "json変換失敗")
+			return cnt
+		}
+		addPost(h)
+
+		url = h.Paging.Next
+		if h.Paging.Next == "" {
+			break
+		}
+	}
+	return cnt
 }
 
 func addPost(history MyHistory) int {
