@@ -79,7 +79,8 @@ func main() {
 }
 
 func checkNewPosts() int {
-	url := os.Getenv("INSTA_API_URL")
+	token := os.Getenv("API_TOKEN")
+	url := fmt.Sprintf("https://graph.instagram.com/me/media?fields=media_url,caption,timestamp&access_token=%s", token)
 	res, err1 := http.Get(url)
 	if err1 != nil {
 		fmt.Fprintf(os.Stderr, "API失敗")
@@ -107,7 +108,7 @@ func addPost(history MyHistory) int {
 		t, e := time.Parse("2006-01-02T15:04:05+0000", p.Timestamp)
 		if e != nil {
 			fmt.Fprintf(os.Stderr, "time parse error: %v\n", e)
-			os.Exit(1)
+			return cnt
 		}
 
 		rows, _ := conn.Query(context.Background(), "select * from posts where post_at = $1", p.Timestamp)
@@ -119,7 +120,7 @@ func addPost(history MyHistory) int {
 		_, err := conn.Exec(context.Background(), "insert into posts(post_at, url, caption, year, month, day) values($1, $2, $3, $4, $5, $6)", p.Timestamp, p.MediaUrl, p.Caption, t.Year(), int(t.Month()), t.Day())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "insert failed: %v\n", err)
-			os.Exit(1)
+			return cnt
 		}
 		cnt++
 	}
@@ -139,7 +140,7 @@ func loadPosts(posts *[]PostAtTime) {
 		err = rows.Scan(&url, &year)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "unable scan: %v\n", err)
-			os.Exit(1)
+			return
 		}
 		fmt.Println("$1", year)
 		if strings.Contains(url, "https://video") {
