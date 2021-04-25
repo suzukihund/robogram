@@ -1,4 +1,4 @@
-module ginsample
+module robogram
 
 go 1.15
 
