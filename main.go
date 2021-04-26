@@ -49,12 +49,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	var posts []PostAtTime
-
 	r := gin.Default()
 	r.LoadHTMLGlob("templates/*")
 	r.GET("/index", func(c *gin.Context) {
-		//		checkNewPosts()
+		var posts []PostAtTime
 		loadPosts(&posts)
 		c.HTML(http.StatusOK, "index.tmpl", gin.H{
 			"posts": posts,
