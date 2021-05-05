@@ -56,7 +56,7 @@ func main() {
 	r.GET("/index", func(c *gin.Context) {
 		posts = []PostAtTime{}
 		loadPosts(&posts)
-		c.HTML(http.StatusOK, "index.tmpl", gin.H{
+		c.HTML(http.StatusOK, "index.html", gin.H{
 			"posts": posts,
 		})
 	})
@@ -178,6 +178,7 @@ func loadPosts(posts *[]PostAtTime) {
 	dt := time.Now()
 	rows, _ := conn.Query(context.Background(), "select url, year from posts where month = $1 and day = $2 order by year desc", int(dt.Month()), dt.Day())
 
+	cnt := 0
 	for rows.Next() {
 		var url string
 		var year int32
@@ -195,5 +196,8 @@ func loadPosts(posts *[]PostAtTime) {
 			post := PostAtTime{year, url, ""}
 			*posts = append(*posts, post)
 		}
+
+		cnt++
 	}
+	fmt.Fprintf(os.Stderr, "[debug] loaded posts: %v\n", cnt)
 }
