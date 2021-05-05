@@ -14,8 +14,6 @@ import (
 	"github.com/jackc/pgx/v4"
 )
 
-var conn *pgx.Conn
-
 type PostAtTime struct {
 	Year  int32
 	Image string
@@ -42,13 +40,6 @@ type MyHistory struct {
 }
 
 func main() {
-	var err error
-	conn, err = pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connection to database: %v\n", err)
-		os.Exit(1)
-	}
-
 	var posts []PostAtTime
 
 	r := gin.Default()
@@ -148,6 +139,12 @@ func insertAllPosts() int {
 }
 
 func addPost(history MyHistory) int {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connection to database: %v\n", err)
+		os.Exit(1)
+	}
+
 	cnt := 0
 	for _, p := range history.Data {
 		t, e := time.Parse("2006-01-02T15:04:05+0000", p.Timestamp)
@@ -173,7 +170,11 @@ func addPost(history MyHistory) int {
 }
 
 func loadPosts(posts *[]PostAtTime) {
-	var err error
+	conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connection to database: %v\n", err)
+		os.Exit(1)
+	}
 
 	dt := time.Now()
 	rows, _ := conn.Query(context.Background(), "select url, year from posts where month = $1 and day = $2 order by year desc", int(dt.Month()), dt.Day())
